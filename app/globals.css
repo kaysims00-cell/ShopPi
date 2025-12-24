@@ -1,0 +1,15 @@
+/* --- Temu-style tweak --- */
+:root{
+  --accent: #0b6efd; /* blue-ish accent - change to your brand */
+  --accent-foreground: #fff;
+  --card-radius: 18px;
+  --soft-shadow: 0 6px 24px rgba(9,30,66,0.08);
+}
+
+.bg-accent { background-color: var(--accent); color: var(--accent-foreground); }
+.text-accent { color: var(--accent); }
+
+.rounded-2xl { border-radius: var(--card-radius); }
+.shadow-lg { box-shadow: var(--soft-shadow); }
+
+button:focus { outline: 2px solid rgba(11,110,253,0.12); outline-offset: 2px; }
