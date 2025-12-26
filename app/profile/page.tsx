@@ -1,33 +1,35 @@
 "use client";
 
 import { useAuth } from "@/app/context/AuthContext";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth();
+  const { user, loading, logout } = useAuth();
+  const router = useRouter();
 
-  if (!user) {
-    return (
-      <div className="p-6 text-center">
-        <p>Please login first.</p>
-        <Link href="/login" className="text-blue-600 underline">
-          Go to Login
-        </Link>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/login");
+    }
+  }, [user, loading, router]);
+
+  if (loading) return <p>Loading...</p>;
+  if (!user) return null;
 
   return (
-    <div className="p-6 max-w-md mx-auto">
+    <div className="max-w-md mx-auto mt-10 p-6 border rounded">
       <h1 className="text-2xl font-bold mb-4">Profile</h1>
-
-      <p><b>Name:</b> {user.name}</p>
-      <p><b>Email:</b> {user.email}</p>
-      <p><b>Role:</b> {user.role}</p>
+      <p><strong>Name:</strong> {user.name}</p>
+      <p><strong>Email:</strong> {user.email}</p>
+      <p><strong>Role:</strong> {user.role}</p>
 
       <button
-        onClick={logout}
-        className="mt-6 px-4 py-2 bg-black text-white rounded"
+        onClick={() => {
+          logout();
+          router.replace("/login");
+        }}
+        className="mt-4 bg-red-600 text-white px-4 py-2 rounded"
       >
         Logout
       </button>
