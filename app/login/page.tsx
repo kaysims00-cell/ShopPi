@@ -17,7 +17,17 @@ export default function LoginPage() {
     try {
       setError("");
       await login(email, password);
-      router.push("/profile"); // replace instead of push
+
+const stored = localStorage.getItem("current_user");
+if (!stored) return;
+
+const user = JSON.parse(stored);
+
+if (user.role === "admin") {
+  router.push("/admin");
+} else {
+  router.push("/profile");
+}
     } catch (err: any) {
       setError(err.message ?? "Login failed");
     }
