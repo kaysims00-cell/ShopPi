@@ -13,23 +13,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
+  // ✅ THIS IS THE CORRECT PLACE FOR handleLogin
   const handleLogin = async () => {
     try {
       setError("");
       await login(email, password);
 
-const stored = localStorage.getItem("current_user");
-if (!stored) return;
-
-const user = JSON.parse(stored);
-
-if (user.role === "admin") {
-  router.push("/admin");
-} else {
-  router.push("/profile");
-}
+      // ✅ ALWAYS go to profile first
+      router.push("/profile");
     } catch (err: any) {
-      setError(err.message ?? "Login failed");
+      setError(err.message || "Login failed");
     }
   };
 

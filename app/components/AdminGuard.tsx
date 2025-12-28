@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function AdminGuard({
   children,
@@ -13,20 +13,23 @@ export default function AdminGuard({
   const router = useRouter();
 
   useEffect(() => {
-    if (loading) return; // wait until auth is ready
+    if (loading) return;
 
+    // Not logged in → go to login
     if (!user) {
       router.replace("/login");
       return;
     }
 
+    // Logged in but NOT admin → go to profile (NOT "/")
     if (user.role !== "admin") {
-      router.replace("/profile"); // ✅ correct redirect
+      router.replace("/profile");
+      return;
     }
   }, [user, loading, router]);
 
   if (loading || !user || user.role !== "admin") {
-    return null; // prevent flicker
+    return null;
   }
 
   return <>{children}</>;
