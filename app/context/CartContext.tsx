@@ -1,50 +1,43 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 export type CartItem = {
-  id: string | number;
+  id: string;
   name: string;
   price: number;
-  image?: string;
   quantity: number;
 };
 
 type CartContextType = {
   cart: CartItem[];
-  addToCart: (item: CartItem) => void;
-  removeFromCart: (id: string | number) => void;
-  updateQuantity: (id: string | number, quantity: number) => void;
+  addToCart: (item: Omit<CartItem, "quantity">) => void;
+  removeFromCart: (id: string) => void;
+  updateQuantity: (id: string, qty: number) => void;
   clearCart: () => void;
 };
 
-const CartContext = createContext<CartContextType | undefined>(undefined);
+const CartContext = createContext<CartContextType | null>(null);
 
-export function CartProvider({ children }: { children: ReactNode }) {
+export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
 
-  /** LOAD CART FROM LOCAL STORAGE */
+  // Load cart once
   useEffect(() => {
-    const saved = localStorage.getItem("shopPi-cart");
-    if (saved) {
-      try {
-        setCart(JSON.parse(saved));
-      } catch {
-        console.error("Failed to parse saved cart.");
-      }
-    }
+    const stored = localStorage.getItem("cart");
+    if (stored) setCart(JSON.parse(stored));
   }, []);
 
-  /** SAVE TO LOCAL STORAGE */
+  // Persist cart
   useEffect(() => {
-    localStorage.setItem("shopPi-cart", JSON.stringify(cart));
+    localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
 
-  const addToCart = (item: CartItem) => {
-    setCart((prev) => {
-      const exists = prev.find((p) => p.id === item.id);
-      if (exists) {
-        return prev.map((p) =>
+  const addToCart = (item: Omit<CartItem, "quantity">) => {
+    setCart(prev => {
+      const existing = prev.find(p => p.id === item.id);
+      if (existing) {
+        return prev.map(p =>
           p.id === item.id ? { ...p, quantity: p.quantity + 1 } : p
         );
       }
@@ -52,14 +45,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const removeFromCart = (id: string | number) => {
-    setCart((prev) => prev.filter((item) => item.id !== id));
+  const removeFromCart = (id: string) => {
+    setCart(prev => prev.filter(item => item.id !== id));
   };
 
-  const updateQuantity = (id: string | number, quantity: number) => {
-    setCart((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, quantity: Math.max(1, quantity) } : item
+  const updateQuantity = (id: string, qty: number) => {
+    setCart(prev =>
+      prev.map(item =>
+        item.id === id ? { ...item, quantity: qty } : item
       )
     );
   };

@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/app/context/AuthContext";
 
 type Order = {
   id: string;
@@ -11,12 +13,37 @@ type Order = {
 };
 
 export default function AdminDashboard() {
+  const router = useRouter();
+  const { user, loading } = useAuth();
+
   const [orders, setOrders] = useState<Order[]>([]);
 
+  /* 🔐 ADMIN GUARD */
+  useEffect(() => {
+    if (loading) return;
+
+    // Not logged in
+    if (!user) {
+      router.replace("/login");
+      return;
+    }
+
+    // Logged in but not admin
+    if (user.role !== "admin") {
+      router.replace("/profile");
+      return;
+    }
+  }, [user, loading, router]);
+
+  /* 📦 LOAD ORDERS */
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("orders_db") || "[]");
     setOrders(stored);
   }, []);
+
+  if (loading || !user || user.role !== "admin") {
+    return null; // prevents flicker
+  }
 
   const totalOrders = orders.length;
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
