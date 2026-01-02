@@ -1,100 +1,107 @@
 "use client";
 
-import { useCart } from "@/app/context/CartContext";
-import { useOrders } from "@/app/context/OrdersContext";
-import { useRewards } from "@/app/context/RewardsContext";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+
+type CartItem = {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+};
 
 export default function CheckoutPage() {
-  const { cart, updateQuantity, removeFromCart } = useCart();
-  const { createOrder } = useOrders();
-  const { addPoints } = useRewards();
+  const router = useRouter();
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
 
-  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const cart: CartItem[] = JSON.parse(
+    localStorage.getItem("cart") || "[]"
+  );
 
-  const handlePlaceOrder = () => {
+  const total = cart.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+
+  const placeOrder = () => {
     if (!name || !phone || !address) {
       alert("Please fill all fields");
       return;
     }
 
     if (cart.length === 0) {
-      alert("Cart is empty!");
+      alert("Cart is empty");
       return;
     }
 
-    // Create order
-    const orderId = createOrder({
-      name,
+    const orders = JSON.parse(
+      localStorage.getItem("orders_db") || "[]"
+    );
+
+    const newOrder = {
+      id: Date.now().toString(),
+      customerName: name,
       phone,
       address,
       items: cart,
       total,
-    });
+      status: "Pending",
+      createdAt: new Date().toISOString(),
+    };
 
-    // Give reward points
-    const rewardPoints = Math.floor(total * 0.05); // 5% back
-    addPoints(rewardPoints, "Order Checkout Reward");
+    orders.push(newOrder);
 
-    alert(`Order placed! ID: ${orderId}\nYou earned ${rewardPoints} points.`);
-
-    // Clear the cart
+    localStorage.setItem("orders_db", JSON.stringify(orders));
     localStorage.removeItem("cart");
-    location.href = `/orders/${orderId}`;
+
+    router.push("/orders");
   };
 
   return (
-    <div className="p-6">
+    <div className="max-w-xl mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-bold">Checkout</h1>
 
-      <div className="mt-6 grid gap-4">
+      {cart.map(item => (
+        <div key={item.id} className="border p-3 rounded">
+          <p className="font-semibold">{item.name}</p>
+          <p>
+            ₦{item.price} × {item.quantity}
+          </p>
+        </div>
+      ))}
 
-        <input
-          type="text"
-          placeholder="Full Name"
-          className="border p-2 rounded w-full"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
+      <p className="font-bold text-lg">Total: ₦{total}</p>
 
-        <input
-          type="text"
-          placeholder="Phone Number"
-          className="border p-2 rounded w-full"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-        />
+      <input
+        className="w-full border p-2"
+        placeholder="Full Name"
+        value={name}
+        onChange={e => setName(e.target.value)}
+      />
 
-        <textarea
-          placeholder="Delivery Address"
-          className="border p-2 rounded w-full"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-        />
+      <input
+        className="w-full border p-2"
+        placeholder="Phone Number"
+        value={phone}
+        onChange={e => setPhone(e.target.value)}
+      />
 
-        <h2 className="text-xl font-semibold mt-4">Order Summary</h2>
+      <textarea
+        className="w-full border p-2"
+        placeholder="Delivery Address"
+        value={address}
+        onChange={e => setAddress(e.target.value)}
+      />
 
-        {cart.map((item) => (
-          <div key={item.id} className="border p-3 rounded flex justify-between">
-            <div>
-              <p className="font-bold">{item.name}</p>
-              <p>Qty: {item.quantity}</p>
-            </div>
-            <p>${item.price * item.quantity}</p>
-          </div>
-        ))}
-
-        <h2 className="text-xl font-semibold mt-4">Total: ${total}</h2>
-
-        <Button className="mt-4 w-full" onClick={handlePlaceOrder}>
-          Place Order
-        </Button>
-      </div>
+      <button
+        onClick={placeOrder}
+        className="w-full bg-black text-white py-2 rounded"
+      >
+        Place Order
+      </button>
     </div>
   );
 }
