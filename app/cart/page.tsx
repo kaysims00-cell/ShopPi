@@ -1,10 +1,24 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { useCart } from "@/app/context/CartContext";
 
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity } = useCart();
+
+  // 🔁 FORCE CART RE-SYNC WHEN PAGE OPENS
+  useEffect(() => {
+    const sync = () => {
+      const stored = JSON.parse(localStorage.getItem("cart") || "[]");
+      localStorage.setItem("cart", JSON.stringify(stored));
+      window.dispatchEvent(new Event("storage"));
+    };
+
+    sync();
+    window.addEventListener("focus", sync);
+    return () => window.removeEventListener("focus", sync);
+  }, []);
 
   const total = cart.reduce(
     (sum, item) => sum + item.price * item.quantity,

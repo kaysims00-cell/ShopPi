@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
+import { Card, CardContent } from "@/components/ui/card";
 
 type OrderItem = {
   id: string;
@@ -13,10 +14,14 @@ type OrderItem = {
 
 type Order = {
   id: string;
-  userEmail: string;
+  customerEmail: string;
+  customerName: string;
+  phone: string;
+  address: string;
   items: OrderItem[];
   total: number;
   status: "Pending" | "Shipped" | "Delivered";
+  createdAt: string;
 };
 
 export default function OrderDetailsPage() {
@@ -34,15 +39,10 @@ export default function OrderDetailsPage() {
       return;
     }
 
-    const orders: Order[] = JSON.parse(
-      localStorage.getItem("orders_db") || "[]"
-    );
+    const orders = JSON.parse(localStorage.getItem("orders_db") || "[]");
+    const found = orders.find((o: Order) => o.id === id);
 
-    const found = orders.find(
-      (o) => o.id === id && o.userEmail === user.email
-    );
-
-    if (!found) {
+    if (!found || found.customerEmail !== user.email) {
       router.replace("/orders");
       return;
     }
@@ -55,51 +55,79 @@ export default function OrderDetailsPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto mt-10 p-6 border rounded space-y-6">
+    <div className="max-w-3xl mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-bold">Order Details</h1>
 
-      <div className="space-y-1">
-        <p>
-          <strong>Order ID:</strong> {order.id}
-        </p>
-        <p>
-          <strong>Status:</strong>{" "}
-          <span className="font-semibold">{order.status}</span>
-        </p>
-        <p>
-          <strong>Total:</strong> ₦{order.total}
-        </p>
-      </div>
+      {/* STATUS TIMELINE */}
+      <StatusTimeline status={order.status} />
 
-      <div>
-        <h2 className="text-lg font-semibold mb-2">Items</h2>
+      {/* ORDER INFO */}
+      <Card>
+        <CardContent className="p-4 space-y-2">
+          <p><strong>Order ID:</strong> {order.id}</p>
+          <p><strong>Status:</strong> {order.status}</p>
+          <p><strong>Total:</strong> ₦{order.total}</p>
+          <p><strong>Date:</strong> {new Date(order.createdAt).toLocaleString()}</p>
+        </CardContent>
+      </Card>
 
-        <div className="space-y-3">
-          {order.items.map((item) => (
+      {/* DELIVERY INFO */}
+      <Card>
+        <CardContent className="p-4 space-y-1">
+          <h2 className="font-semibold">Delivery Details</h2>
+          <p>{order.customerName}</p>
+          <p>{order.phone}</p>
+          <p>{order.address}</p>
+        </CardContent>
+      </Card>
+
+      {/* ITEMS */}
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <h2 className="font-semibold">Items</h2>
+
+          {order.items.map(item => (
             <div
               key={item.id}
-              className="flex justify-between border p-3 rounded"
+              className="flex justify-between text-sm border-b pb-2"
             >
-              <div>
-                <p className="font-medium">{item.name}</p>
-                <p className="text-sm text-gray-600">
-                  ₦{item.price} × {item.quantity}
-                </p>
-              </div>
-              <p className="font-semibold">
-                ₦{item.price * item.quantity}
-              </p>
+              <span>
+                {item.name} × {item.quantity}
+              </span>
+              <span>₦{item.price * item.quantity}</span>
             </div>
           ))}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
-      <button
-        onClick={() => router.push("/orders")}
-        className="bg-black text-white px-6 py-2 rounded"
-      >
-        Back to Orders
-      </button>
+/* 🔵 STATUS TIMELINE COMPONENT */
+function StatusTimeline({ status }: { status: Order["status"] }) {
+  const steps: Order["status"][] = ["Pending", "Shipped", "Delivered"];
+
+  return (
+    <div className="flex justify-between items-center">
+      {steps.map((step, index) => {
+        const active =
+          steps.indexOf(status) >= index;
+
+        return (
+          <div key={step} className="flex-1 text-center">
+            <div
+              className={`mx-auto w-8 h-8 rounded-full flex items-center justify-center text-white ${
+                active ? "bg-green-600" : "bg-gray-300"
+              }`}
+            >
+              {index + 1}
+            </div>
+            <p className={`mt-1 text-sm ${active ? "font-semibold" : ""}`}>
+              {step}
+            </p>
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 
 type Order = {
@@ -16,7 +17,7 @@ export default function OrdersPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
 
-  // 🔐 AUTH GUARD (SAFE)
+  // 🔐 AUTH GUARD
   useEffect(() => {
     if (loading) return;
 
@@ -48,12 +49,26 @@ export default function OrdersPage() {
       {orders.map(order => (
         <Card key={order.id}>
           <CardContent className="p-4 space-y-2">
-            <p><strong>Order ID:</strong> {order.id}</p>
-            <p><strong>Total:</strong> ₦{order.total}</p>
+            <p>
+              <strong>Order ID:</strong> {order.id}
+            </p>
+
+            <p>
+              <strong>Total:</strong> ₦{order.total}
+            </p>
+
             <p>
               <strong>Status:</strong>{" "}
               <span className="font-semibold">{order.status}</span>
             </p>
+
+            {/* 👇 NEW: VIEW DETAILS LINK */}
+            <Link
+              href={`/orders/${order.id}`}
+              className="text-blue-600 underline text-sm inline-block mt-2"
+            >
+              View Details →
+            </Link>
           </CardContent>
         </Card>
       ))}

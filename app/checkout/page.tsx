@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/context/AuthContext";
 
 type CartItem = {
   id: string;
@@ -12,38 +13,48 @@ type CartItem = {
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const { user, loading } = useAuth();
 
-  const [name, setName] = useState("");
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
 
-  const cart: CartItem[] = JSON.parse(
-    localStorage.getItem("cart") || "[]"
-  );
+  /* 🔐 Require login (SAFE) */
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/login");
+    }
+  }, [user, loading, router]);
+
+  /* 🛒 Load cart */
+  useEffect(() => {
+    const storedCart = JSON.parse(localStorage.getItem("cart") || "[]");
+    setCart(storedCart);
+  }, []);
 
   const total = cart.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
 
-  const placeOrder = () => {
-    if (!name || !phone || !address) {
-      alert("Please fill all fields");
+  function handlePlaceOrder() {
+    if (!user) return;
+
+    if (!fullName || !phone || !address) {
+      alert("Please fill all delivery details");
       return;
     }
 
     if (cart.length === 0) {
-      alert("Cart is empty");
+      alert("Your cart is empty");
       return;
     }
 
-    const orders = JSON.parse(
-      localStorage.getItem("orders_db") || "[]"
-    );
-
     const newOrder = {
       id: Date.now().toString(),
-      customerName: name,
+      customerEmail: user.email, // ✅ THIS FIXES USER ORDERS
+      customerName: fullName,
       phone,
       address,
       items: cart,
@@ -52,53 +63,72 @@ export default function CheckoutPage() {
       createdAt: new Date().toISOString(),
     };
 
-    orders.push(newOrder);
+    const existingOrders = JSON.parse(
+      localStorage.getItem("orders_db") || "[]"
+    );
 
-    localStorage.setItem("orders_db", JSON.stringify(orders));
+    localStorage.setItem(
+      "orders_db",
+      JSON.stringify([newOrder, ...existingOrders])
+    );
+
     localStorage.removeItem("cart");
 
-    router.push("/orders");
-  };
+    router.push("/orders"); // ✅ USER WILL NOW SEE ORDER
+  }
+
+  if (loading) {
+    return <div className="p-6">Loading...</div>;
+  }
 
   return (
-    <div className="max-w-xl mx-auto p-6 space-y-6">
+    <div className="max-w-2xl mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-bold">Checkout</h1>
 
-      {cart.map(item => (
-        <div key={item.id} className="border p-3 rounded">
-          <p className="font-semibold">{item.name}</p>
-          <p>
-            ₦{item.price} × {item.quantity}
-          </p>
-        </div>
-      ))}
+      {/* Order Summary */}
+      <div className="border rounded p-4 space-y-2">
+        <h2 className="font-semibold">Order Summary</h2>
 
-      <p className="font-bold text-lg">Total: ₦{total}</p>
+        {cart.map(item => (
+          <div key={item.id} className="flex justify-between text-sm">
+            <span>
+              {item.name} × {item.quantity}
+            </span>
+            <span>₦{item.price * item.quantity}</span>
+          </div>
+        ))}
 
-      <input
-        className="w-full border p-2"
-        placeholder="Full Name"
-        value={name}
-        onChange={e => setName(e.target.value)}
-      />
+        <hr />
+        <p className="font-bold">Total: ₦{total}</p>
+      </div>
 
-      <input
-        className="w-full border p-2"
-        placeholder="Phone Number"
-        value={phone}
-        onChange={e => setPhone(e.target.value)}
-      />
+      {/* Delivery Form */}
+      <div className="space-y-3">
+        <input
+          className="w-full border p-2 rounded"
+          placeholder="Full Name"
+          value={fullName}
+          onChange={e => setFullName(e.target.value)}
+        />
 
-      <textarea
-        className="w-full border p-2"
-        placeholder="Delivery Address"
-        value={address}
-        onChange={e => setAddress(e.target.value)}
-      />
+        <input
+          className="w-full border p-2 rounded"
+          placeholder="Phone Number"
+          value={phone}
+          onChange={e => setPhone(e.target.value)}
+        />
+
+        <textarea
+          className="w-full border p-2 rounded"
+          placeholder="Delivery Address"
+          value={address}
+          onChange={e => setAddress(e.target.value)}
+        />
+      </div>
 
       <button
-        onClick={placeOrder}
-        className="w-full bg-black text-white py-2 rounded"
+        onClick={handlePlaceOrder}
+        className="w-full bg-black text-white py-3 rounded"
       >
         Place Order
       </button>
