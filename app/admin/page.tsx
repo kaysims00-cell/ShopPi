@@ -16,8 +16,9 @@ export default function AdminDashboard() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [newOrderAlert, setNewOrderAlert] = useState(false);
+  const [hasNewOrder, setHasNewOrder] = useState(false);
 
+  /* 🔐 ADMIN GUARD */
   useEffect(() => {
     if (loading) return;
 
@@ -32,13 +33,16 @@ export default function AdminDashboard() {
     }
   }, [user, loading, router]);
 
+  /* 📦 LOAD DATA + CHECK NOTIFICATION */
   useEffect(() => {
-    const storedOrders = JSON.parse(localStorage.getItem("orders_db") || "[]");
+    const storedOrders = JSON.parse(
+      localStorage.getItem("orders_db") || "[]"
+    );
     setOrders(storedOrders);
 
     const adminNote = localStorage.getItem("admin_notification");
-    if (adminNote) {
-      setNewOrderAlert(true);
+    if (adminNote === "new") {
+      setHasNewOrder(true);
     }
   }, []);
 
@@ -52,17 +56,20 @@ export default function AdminDashboard() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
 
-        <Link href="/admin/orders" className="relative text-blue-600 underline">
+        <Link
+          href="/admin/orders"
+          className="relative text-blue-600 underline"
+        >
           Manage Orders →
-          {newOrderAlert && (
-            <span className="absolute -top-2 -right-3 bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">
+          {hasNewOrder && (
+            <span className="absolute -top-2 -right-4 bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">
               NEW
             </span>
           )}
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-muted-foreground">Total Orders</p>
