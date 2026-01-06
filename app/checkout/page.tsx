@@ -20,14 +20,14 @@ export default function CheckoutPage() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
 
-  /* 🔐 Require login (SAFE) */
+  // 🔐 Require login
   useEffect(() => {
     if (!loading && !user) {
       router.replace("/login");
     }
   }, [user, loading, router]);
 
-  /* 🛒 Load cart */
+  // 🛒 Load cart
   useEffect(() => {
     const storedCart = JSON.parse(localStorage.getItem("cart") || "[]");
     setCart(storedCart);
@@ -53,7 +53,7 @@ export default function CheckoutPage() {
 
     const newOrder = {
       id: Date.now().toString(),
-      customerEmail: user.email, // ✅ THIS FIXES USER ORDERS
+      customerEmail: user.email,
       customerName: fullName,
       phone,
       address,
@@ -72,9 +72,19 @@ export default function CheckoutPage() {
       JSON.stringify([newOrder, ...existingOrders])
     );
 
+    // ✅ SAVE NOTIFICATION (THIS WAS MISSING)
+    localStorage.setItem(
+      "user_notification",
+      "✅ Your order has been placed successfully!"
+    );
+
+    // ✅ CLEAR CART
     localStorage.removeItem("cart");
 
-    router.push("/orders"); // ✅ USER WILL NOW SEE ORDER
+    // ✅ FORCE REDIRECT (AFTER STORAGE)
+    setTimeout(() => {
+      router.replace("/profile");
+    }, 50);
   }
 
   if (loading) {

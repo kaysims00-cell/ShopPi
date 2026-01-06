@@ -15,52 +15,50 @@ type Order = {
 export default function AdminDashboard() {
   const router = useRouter();
   const { user, loading } = useAuth();
-
   const [orders, setOrders] = useState<Order[]>([]);
+  const [newOrderAlert, setNewOrderAlert] = useState(false);
 
-  /* 🔐 ADMIN GUARD */
   useEffect(() => {
     if (loading) return;
 
-    // Not logged in
     if (!user) {
       router.replace("/login");
       return;
     }
 
-    // Logged in but not admin
     if (user.role !== "admin") {
       router.replace("/profile");
       return;
     }
   }, [user, loading, router]);
 
-  /* 📦 LOAD ORDERS */
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("orders_db") || "[]");
-    setOrders(stored);
+    const storedOrders = JSON.parse(localStorage.getItem("orders_db") || "[]");
+    setOrders(storedOrders);
+
+    const adminNote = localStorage.getItem("admin_notification");
+    if (adminNote) {
+      setNewOrderAlert(true);
+    }
   }, []);
 
-  if (loading || !user || user.role !== "admin") {
-    return null; // prevents flicker
-  }
+  if (loading || !user || user.role !== "admin") return null;
 
   const totalOrders = orders.length;
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
-
-  const pending = orders.filter(o => o.status === "Pending").length;
-  const shipped = orders.filter(o => o.status === "Shipped").length;
-  const delivered = orders.filter(o => o.status === "Delivered").length;
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-        <Link
-          href="/admin/orders"
-          className="text-blue-600 underline"
-        >
+
+        <Link href="/admin/orders" className="relative text-blue-600 underline">
           Manage Orders →
+          {newOrderAlert && (
+            <span className="absolute -top-2 -right-3 bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">
+              NEW
+            </span>
+          )}
         </Link>
       </div>
 
@@ -76,27 +74,6 @@ export default function AdminDashboard() {
           <CardContent className="p-6">
             <p className="text-sm text-muted-foreground">Total Revenue</p>
             <p className="text-3xl font-bold">₦{totalRevenue}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Pending Orders</p>
-            <p className="text-3xl font-bold">{pending}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Shipped Orders</p>
-            <p className="text-3xl font-bold">{shipped}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Delivered Orders</p>
-            <p className="text-3xl font-bold">{delivered}</p>
           </CardContent>
         </Card>
       </div>

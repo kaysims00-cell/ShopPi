@@ -1,55 +1,71 @@
 "use client";
 
-import { useOrders } from "@/app/context/OrdersContext";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+
+type Order = {
+  id: string;
+  customerName: string;
+  total: number;
+  status: "Pending" | "Shipped" | "Delivered";
+};
 
 export default function AdminOrdersPage() {
-  const { orders, updateOrderStatus } = useOrders();
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  useEffect(() => {
+    const stored = JSON.parse(localStorage.getItem("orders_db") || "[]");
+    setOrders(stored);
+  }, []);
+
+  if (orders.length === 0) {
+    return (
+      <div className="p-6">
+        <h1 className="text-2xl font-bold">Orders</h1>
+        <p className="mt-4 text-gray-600">No orders yet.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Admin Order Control</h1>
+    <div className="p-6 space-y-6">
+      <h1 className="text-2xl font-bold">All Orders</h1>
 
-      {orders.length === 0 ? (
-        <p>No orders yet.</p>
-      ) : (
-        <div className="space-y-4">
-          {orders.map((order) => (
-            <div
-              key={order.id}
-              className="border rounded p-4 bg-white shadow"
-            >
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="font-semibold">
-                    Order #{order.id.slice(-6)}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {order.userEmail}
-                  </p>
-                  <p className="text-sm">
-                    Total: ₦{order.total}
-                  </p>
-                </div>
+      <Card>
+        <CardContent className="p-0">
+          <table className="w-full border-collapse">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="text-left p-3">Order ID</th>
+                <th className="text-left p-3">Customer</th>
+                <th className="text-left p-3">Total</th>
+                <th className="text-left p-3">Status</th>
+                <th className="text-left p-3">Action</th>
+              </tr>
+            </thead>
 
-                <select
-                  value={order.status}
-                  onChange={(e) =>
-                    updateOrderStatus(
-                      order.id,
-                      e.target.value as any
-                    )
-                  }
-                  className="border rounded px-3 py-2"
-                >
-                  <option value="Pending">Pending</option>
-                  <option value="Shipped">Shipped</option>
-                  <option value="Delivered">Delivered</option>
-                </select>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+            <tbody>
+              {orders.map(order => (
+                <tr key={order.id} className="border-t">
+                  <td className="p-3">{order.id}</td>
+                  <td className="p-3">{order.customerName}</td>
+                  <td className="p-3">₦{order.total}</td>
+                  <td className="p-3">{order.status}</td>
+                  <td className="p-3">
+                    <Link
+                      href={`/admin/orders/${order.id}`}
+                      className="text-blue-600 underline"
+                    >
+                      View
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

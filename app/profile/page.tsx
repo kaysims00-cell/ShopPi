@@ -2,23 +2,40 @@
 
 import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function ProfilePage() {
   const { user, logout, loading } = useAuth();
   const router = useRouter();
+  const [notification, setNotification] = useState<string | null>(null);
+
+  useEffect(() => {
+    const note = localStorage.getItem("user_notification");
+    if (note) {
+      setNotification(note);
+      localStorage.removeItem("user_notification");
+    }
+  }, []);
 
   if (loading) {
     return <div className="p-6">Loading...</div>;
   }
 
   if (!user) {
-    router.push("/login");
+    router.replace("/login");
     return null;
   }
 
   return (
     <div className="max-w-xl mx-auto mt-10 p-6 border rounded space-y-4">
       <h1 className="text-2xl font-bold">Profile</h1>
+
+      {/* ✅ SUCCESS MESSAGE */}
+      {notification && (
+        <div className="bg-green-100 text-green-800 p-3 rounded">
+          {notification}
+        </div>
+      )}
 
       <div>
         <p><strong>Name:</strong> {user.name}</p>
