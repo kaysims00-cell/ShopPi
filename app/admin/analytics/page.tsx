@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,16 +15,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-type OrderItem = {
-  id: string;
-  name: string;
-  quantity: number;
-  price: number;
-};
-
 type Order = {
   id: string;
-  items: OrderItem[];
   total: number;
   status: "Pending" | "Shipped" | "Delivered";
   createdAt: string;
@@ -33,7 +25,6 @@ type Order = {
 export default function AdminAnalyticsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-
   const [orders, setOrders] = useState<Order[]>([]);
 
   // 🔐 ADMIN GUARD
@@ -56,124 +47,130 @@ export default function AdminAnalyticsPage() {
 
   if (loading || !user || user.role !== "admin") return null;
 
-  // ======================
+  // ==========================
+  // DATE HELPERS
+  // ==========================
+  const today = new Date();
+
+  const last30Start = new Date();
+  last30Start.setDate(today.getDate() - 30);
+
+  const prev30Start = new Date();
+  prev30Start.setDate(today.getDate() - 60);
+
+  const prev30End = new Date();
+  prev30End.setDate(today.getDate() - 30);
+
+  // ==========================
+  // FILTER PERIODS
+  // ==========================
+  const last30Orders = useMemo(
+    () =>
+      orders.filter(
+        o => new Date(o.createdAt) >= last30Start
+      ),
+    [orders]
+  );
+
+  const prev30Orders = useMemo(
+    () =>
+      orders.filter(o => {
+        const d = new Date(o.createdAt);
+        return d >= prev30Start && d < prev30End;
+      }),
+    [orders]
+  );
+
+  // ==========================
   // METRICS
-  // ======================
-  const totalOrders = orders.length;
-  const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
+  // ==========================
+  const last30Revenue = last30Orders.reduce((s, o) => s + o.total, 0);
+  const prev30Revenue = prev30Orders.reduce((s, o) => s + o.total, 0);
 
-  // ======================
+  const last30Count = last30Orders.length;
+  const prev30Count = prev30Orders.length;
+
+  // ==========================
+  // GROWTH CALCULATIONS
+  // ==========================
+  const calcGrowth = (current: number, prev: number) => {
+    if (prev === 0) return 100;
+    return ((current - prev) / prev) * 100;
+  };
+
+  const revenueGrowth = calcGrowth(last30Revenue, prev30Revenue);
+  const orderGrowth = calcGrowth(last30Count, prev30Count);
+
+  // ==========================
   // CHART DATA
-  // ======================
-
-  // 1️⃣ Orders by Status
-  const statusData = [
+  // ==========================
+  const comparisonChart = [
     {
-      name: "Pending",
-      value: orders.filter(o => o.status === "Pending").length,
+      name: "Previous 30 Days",
+      revenue: prev30Revenue,
+      orders: prev30Count,
     },
     {
-      name: "Shipped",
-      value: orders.filter(o => o.status === "Shipped").length,
-    },
-    {
-      name: "Delivered",
-      value: orders.filter(o => o.status === "Delivered").length,
+      name: "Last 30 Days",
+      revenue: last30Revenue,
+      orders: last30Count,
     },
   ];
 
-  // 2️⃣ Revenue Over Time (by date)
-  const revenueMap: Record<string, number> = {};
-
-  orders.forEach(order => {
-    const date = new Date(order.createdAt).toLocaleDateString();
-    revenueMap[date] = (revenueMap[date] || 0) + order.total;
-  });
-
-  const revenueData = Object.entries(revenueMap).map(([date, total]) => ({
-    date,
-    total,
-  }));
-
-  // 3️⃣ Top Products
-  const productMap: Record<string, number> = {};
-
-  orders.forEach(order => {
-    order.items.forEach(item => {
-      productMap[item.name] =
-        (productMap[item.name] || 0) + item.quantity;
-    });
-  });
-
-  const productData = Object.entries(productMap).map(([name, qty]) => ({
-    name,
-    qty,
-  }));
+  const growthColor = (value: number) =>
+    value >= 0 ? "text-green-600" : "text-red-600";
 
   return (
     <div className="p-6 space-y-8">
       <h1 className="text-2xl font-bold">Admin Analytics</h1>
 
-      {/* SUMMARY */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Total Orders</p>
-            <p className="text-3xl font-bold">{totalOrders}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-sm text-muted-foreground">Total Revenue</p>
-            <p className="text-3xl font-bold">₦{totalRevenue}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* CHARTS */}
+      {/* SUMMARY COMPARISON */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Orders by Status */}
         <Card>
-          <CardContent className="p-4">
-            <h2 className="font-semibold mb-4">Orders by Status</h2>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={statusData}>
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" />
-              </BarChart>
-            </ResponsiveContainer>
+          <CardContent className="p-6 space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Revenue Comparison (30 days)
+            </p>
+            <p className="text-xl font-bold">
+              ₦{last30Revenue} vs ₦{prev30Revenue}
+            </p>
+            <p className={`font-semibold ${growthColor(revenueGrowth)}`}>
+              {revenueGrowth >= 0 ? "▲" : "▼"}{" "}
+              {Math.abs(revenueGrowth).toFixed(1)}%
+            </p>
           </CardContent>
         </Card>
 
-        {/* Revenue Over Time */}
         <Card>
-          <CardContent className="p-4">
-            <h2 className="font-semibold mb-4">Revenue Over Time</h2>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={revenueData}>
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="total" />
-              </LineChart>
-            </ResponsiveContainer>
+          <CardContent className="p-6 space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Orders Comparison (30 days)
+            </p>
+            <p className="text-xl font-bold">
+              {last30Count} vs {prev30Count}
+            </p>
+            <p className={`font-semibold ${growthColor(orderGrowth)}`}>
+              {orderGrowth >= 0 ? "▲" : "▼"}{" "}
+              {Math.abs(orderGrowth).toFixed(1)}%
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Top Products */}
+      {/* BAR CHART */}
       <Card>
         <CardContent className="p-4">
-          <h2 className="font-semibold mb-4">Top Selling Products</h2>
+          <h2 className="font-semibold mb-4">
+            Last 30 vs Previous 30 Days
+          </h2>
+
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={productData}>
+            <BarChart data={comparisonChart}>
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip />
-              <Bar dataKey="qty" />
+              <Bar dataKey="revenue" />
+              <Bar dataKey="orders" />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
