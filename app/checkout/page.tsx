@@ -59,7 +59,7 @@ export default function CheckoutPage() {
       address,
       items: cart,
       total,
-      status: "Pending" as const,
+      status: "Pending",
       createdAt: new Date().toISOString(),
     };
 
@@ -67,14 +67,19 @@ export default function CheckoutPage() {
       localStorage.getItem("orders_db") || "[]"
     );
 
-    // 📦 SAVE ORDER
     localStorage.setItem(
       "orders_db",
       JSON.stringify([newOrder, ...existingOrders])
     );
 
-    // 🔔 ADMIN NOTIFICATION (BADGE TRIGGER)
-    localStorage.setItem("admin_notification", "NEW_ORDER");
+    // 🔔 ADMIN BADGE COUNTER (INCREMENT)
+    const currentCount = Number(
+      localStorage.getItem("admin_new_orders_count") || 0
+    );
+    localStorage.setItem(
+      "admin_new_orders_count",
+      String(currentCount + 1)
+    );
 
     // ✅ USER SUCCESS MESSAGE
     localStorage.setItem(
@@ -85,7 +90,7 @@ export default function CheckoutPage() {
     // 🧹 CLEAR CART
     localStorage.removeItem("cart");
 
-    // 🔀 REDIRECT TO PROFILE
+    // ➡️ REDIRECT TO PROFILE
     setTimeout(() => {
       router.replace("/profile");
     }, 50);

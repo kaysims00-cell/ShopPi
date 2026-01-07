@@ -15,11 +15,11 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
 
   useEffect(() => {
+    // 🔕 CLEAR ADMIN BADGE COUNTER WHEN VIEWING ORDERS
+    localStorage.removeItem("admin_new_orders_count");
+
     const stored = JSON.parse(localStorage.getItem("orders_db") || "[]");
     setOrders(stored);
-
-    // ✅ AUTO-CLEAR ADMIN NOTIFICATION BADGE
-    localStorage.removeItem("admin_notification");
   }, []);
 
   if (orders.length === 0) {

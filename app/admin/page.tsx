@@ -9,7 +9,6 @@ import { useAuth } from "@/app/context/AuthContext";
 type Order = {
   id: string;
   total: number;
-  status: "Pending" | "Shipped" | "Delivered";
 };
 
 export default function AdminDashboard() {
@@ -17,7 +16,7 @@ export default function AdminDashboard() {
   const { user, loading } = useAuth();
 
   const [orders, setOrders] = useState<Order[]>([]);
-  const [hasNewOrders, setHasNewOrders] = useState(false);
+  const [newCount, setNewCount] = useState(0);
 
   // 🔐 ADMIN GUARD
   useEffect(() => {
@@ -34,13 +33,15 @@ export default function AdminDashboard() {
     }
   }, [user, loading, router]);
 
-  // 📦 LOAD ORDERS + CHECK BADGE
+  // 📦 LOAD DATA + BADGE COUNT
   useEffect(() => {
     const storedOrders = JSON.parse(localStorage.getItem("orders_db") || "[]");
     setOrders(storedOrders);
 
-    const adminNote = localStorage.getItem("admin_notification");
-    setHasNewOrders(!!adminNote);
+    const count = Number(
+      localStorage.getItem("admin_new_orders_count") || 0
+    );
+    setNewCount(count);
   }, []);
 
   if (loading || !user || user.role !== "admin") return null;
@@ -53,18 +54,14 @@ export default function AdminDashboard() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
 
-        {/* 🔴 BADGE FIXED */}
-        <div className="relative inline-block">
-          <Link href="/admin/orders" className="text-blue-600 underline">
-            Manage Orders →
-          </Link>
-
-          {hasNewOrders && (
-            <span className="absolute -top-2 -right-4 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-              NEW
+        <Link href="/admin/orders" className="relative text-blue-600 underline">
+          Manage Orders →
+          {newCount > 0 && (
+            <span className="absolute -top-2 -right-4 bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">
+              NEW {newCount}
             </span>
           )}
-        </div>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
