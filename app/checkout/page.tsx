@@ -59,7 +59,7 @@ export default function CheckoutPage() {
       address,
       items: cart,
       total,
-      status: "Pending",
+      status: "Pending" as const,
       createdAt: new Date().toISOString(),
     };
 
@@ -67,21 +67,25 @@ export default function CheckoutPage() {
       localStorage.getItem("orders_db") || "[]"
     );
 
+    // 📦 SAVE ORDER
     localStorage.setItem(
       "orders_db",
       JSON.stringify([newOrder, ...existingOrders])
     );
 
-    // ✅ SAVE NOTIFICATION (THIS WAS MISSING)
+    // 🔔 ADMIN NOTIFICATION (BADGE TRIGGER)
+    localStorage.setItem("admin_notification", "NEW_ORDER");
+
+    // ✅ USER SUCCESS MESSAGE
     localStorage.setItem(
       "user_notification",
       "✅ Your order has been placed successfully!"
     );
 
-    // ✅ CLEAR CART
+    // 🧹 CLEAR CART
     localStorage.removeItem("cart");
 
-    // ✅ FORCE REDIRECT (AFTER STORAGE)
+    // 🔀 REDIRECT TO PROFILE
     setTimeout(() => {
       router.replace("/profile");
     }, 50);

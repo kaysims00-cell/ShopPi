@@ -18,7 +18,7 @@ export default function AdminOrdersPage() {
     const stored = JSON.parse(localStorage.getItem("orders_db") || "[]");
     setOrders(stored);
 
-    // 🔔 CLEAR ADMIN NOTIFICATION WHEN VIEWED
+    // 🔕 CLEAR ADMIN NOTIFICATION WHEN VIEWED
     localStorage.removeItem("admin_notification");
   }, []);
 
@@ -40,11 +40,11 @@ export default function AdminOrdersPage() {
           <table className="w-full border-collapse">
             <thead className="bg-gray-100">
               <tr>
-                <th className="p-3 text-left">Order ID</th>
-                <th className="p-3 text-left">Customer</th>
-                <th className="p-3 text-left">Total</th>
-                <th className="p-3 text-left">Status</th>
-                <th className="p-3 text-left">Action</th>
+                <th className="text-left p-3">Order ID</th>
+                <th className="text-left p-3">Customer</th>
+                <th className="text-left p-3">Total</th>
+                <th className="text-left p-3">Status</th>
+                <th className="text-left p-3">Action</th>
               </tr>
             </thead>
 

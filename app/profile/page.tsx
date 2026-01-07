@@ -9,21 +9,24 @@ export default function ProfilePage() {
   const router = useRouter();
   const [notification, setNotification] = useState<string | null>(null);
 
+  // ✅ Handle auth redirect SAFELY
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/login");
+    }
+  }, [user, loading, router]);
+
+  // ✅ Load success notification ONCE
   useEffect(() => {
     const note = localStorage.getItem("user_notification");
     if (note) {
       setNotification(note);
-      localStorage.removeItem("user_notification");
+      localStorage.removeItem("user_notification"); // auto-clear
     }
   }, []);
 
-  if (loading) {
+  if (loading || !user) {
     return <div className="p-6">Loading...</div>;
-  }
-
-  if (!user) {
-    router.replace("/login");
-    return null;
   }
 
   return (
@@ -37,9 +40,13 @@ export default function ProfilePage() {
         </div>
       )}
 
-      <div>
-        <p><strong>Name:</strong> {user.name}</p>
-        <p><strong>Email:</strong> {user.email}</p>
+      <div className="space-y-1">
+        <p>
+          <strong>Name:</strong> {user.name}
+        </p>
+        <p>
+          <strong>Email:</strong> {user.email}
+        </p>
         <p>
           <strong>Role:</strong>{" "}
           {user.role === "admin" ? (
@@ -60,10 +67,7 @@ export default function ProfilePage() {
       )}
 
       <button
-        onClick={() => {
-          logout();
-          router.push("/login");
-        }}
+        onClick={logout} // ✅ logout ONLY
         className="w-full bg-gray-800 text-white py-2 rounded"
       >
         Logout
