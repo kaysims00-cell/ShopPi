@@ -34,7 +34,7 @@ export default function AdminDashboard() {
     }
   }, [user, loading, router]);
 
-  // 📦 LOAD DATA + CHECK NOTIFICATION
+  // 📦 LOAD ORDERS + CHECK BADGE
   useEffect(() => {
     const storedOrders = JSON.parse(localStorage.getItem("orders_db") || "[]");
     setOrders(storedOrders);
@@ -53,14 +53,18 @@ export default function AdminDashboard() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
 
-        <Link href="/admin/orders" className="relative text-blue-600 underline">
-          Manage Orders →
+        {/* 🔴 BADGE FIXED */}
+        <div className="relative inline-block">
+          <Link href="/admin/orders" className="text-blue-600 underline">
+            Manage Orders →
+          </Link>
+
           {hasNewOrders && (
-            <span className="absolute -top-2 -right-4 bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">
+            <span className="absolute -top-2 -right-4 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
               NEW
             </span>
           )}
-        </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

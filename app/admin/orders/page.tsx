@@ -18,7 +18,7 @@ export default function AdminOrdersPage() {
     const stored = JSON.parse(localStorage.getItem("orders_db") || "[]");
     setOrders(stored);
 
-    // 🔕 CLEAR ADMIN NOTIFICATION WHEN VIEWED
+    // ✅ AUTO-CLEAR ADMIN NOTIFICATION BADGE
     localStorage.removeItem("admin_notification");
   }, []);
 

@@ -1,23 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useCart } from "@/app/context/CartContext";
 
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity } = useCart();
 
-  // 🔁 FORCE CART RE-SYNC WHEN PAGE OPENS
+  // 🔁 FORCE RE-RENDER ON PAGE LOAD (NO REFRESH)
+  const [, setTick] = useState(0);
   useEffect(() => {
-    const sync = () => {
-      const stored = JSON.parse(localStorage.getItem("cart") || "[]");
-      localStorage.setItem("cart", JSON.stringify(stored));
-      window.dispatchEvent(new Event("storage"));
-    };
-
-    sync();
-    window.addEventListener("focus", sync);
-    return () => window.removeEventListener("focus", sync);
+    setTick(t => t + 1);
   }, []);
 
   const total = cart.reduce(
