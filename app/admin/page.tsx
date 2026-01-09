@@ -33,15 +33,16 @@ export default function AdminDashboard() {
     }
   }, [user, loading, router]);
 
-  // 📦 LOAD DATA + BADGE COUNT
+  // 📦 LOAD ORDERS + BADGE LOGIC
   useEffect(() => {
     const storedOrders = JSON.parse(localStorage.getItem("orders_db") || "[]");
     setOrders(storedOrders);
 
-    const count = Number(
+    const storedCount = Number(
       localStorage.getItem("admin_new_orders_count") || 0
     );
-    setNewCount(count);
+
+    setNewCount(storedCount);
   }, []);
 
   if (loading || !user || user.role !== "admin") return null;

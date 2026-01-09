@@ -9,13 +9,14 @@ type Order = {
   customerName: string;
   total: number;
   status: "Pending" | "Shipped" | "Delivered";
+  paymentStatus?: "Paid" | "Pending";
 };
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
 
   useEffect(() => {
-    // 🔕 CLEAR ADMIN BADGE COUNTER WHEN VIEWING ORDERS
+    // 🔕 CLEAR ADMIN BADGE WHEN VIEWING ORDERS
     localStorage.removeItem("admin_new_orders_count");
 
     const stored = JSON.parse(localStorage.getItem("orders_db") || "[]");
@@ -43,6 +44,7 @@ export default function AdminOrdersPage() {
                 <th className="text-left p-3">Order ID</th>
                 <th className="text-left p-3">Customer</th>
                 <th className="text-left p-3">Total</th>
+                <th className="text-left p-3">Payment</th>
                 <th className="text-left p-3">Status</th>
                 <th className="text-left p-3">Action</th>
               </tr>
@@ -54,7 +56,22 @@ export default function AdminOrdersPage() {
                   <td className="p-3">{order.id}</td>
                   <td className="p-3">{order.customerName}</td>
                   <td className="p-3">₦{order.total}</td>
+
+                  {/* 💳 PAYMENT STATUS */}
+                  <td className="p-3">
+                    {order.paymentStatus === "Paid" ? (
+                      <span className="text-green-600 font-semibold">
+                        Paid
+                      </span>
+                    ) : (
+                      <span className="text-yellow-600 font-semibold">
+                        Pending
+                      </span>
+                    )}
+                  </td>
+
                   <td className="p-3">{order.status}</td>
+
                   <td className="p-3">
                     <Link
                       href={`/admin/orders/${order.id}`}

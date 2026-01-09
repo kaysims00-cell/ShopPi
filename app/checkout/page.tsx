@@ -19,6 +19,7 @@ export default function CheckoutPage() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [processing, setProcessing] = useState(false);
 
   // 🔐 Require login
   useEffect(() => {
@@ -29,8 +30,8 @@ export default function CheckoutPage() {
 
   // 🛒 Load cart
   useEffect(() => {
-    const storedCart = JSON.parse(localStorage.getItem("cart") || "[]");
-    setCart(storedCart);
+    const stored = JSON.parse(localStorage.getItem("cart") || "[]");
+    setCart(stored);
   }, []);
 
   const total = cart.reduce(
@@ -38,9 +39,59 @@ export default function CheckoutPage() {
     0
   );
 
-  function handlePlaceOrder() {
+  function mockPaymentSuccess() {
     if (!user) return;
 
+    // ✅ CREATE ORDER (PAID)
+    const order = {
+      id: Date.now().toString(),
+      customerEmail: user.email,
+      customerName: fullName,
+      phone,
+      address,
+      items: cart,
+      total,
+      status: "Pending",
+      paymentStatus: "Paid",
+      paymentRef: "MOCK-" + Math.random().toString(36).substring(2, 10),
+      createdAt: new Date().toISOString(),
+    };
+
+    const existingOrders = JSON.parse(
+      localStorage.getItem("orders_db") || "[]"
+    );
+
+    localStorage.setItem(
+      "orders_db",
+      JSON.stringify([order, ...existingOrders])
+    );
+
+    // 🔴 ADMIN BADGE COUNTER (CRITICAL FIX)
+    const currentCount = Number(
+      localStorage.getItem("admin_new_orders_count") || 0
+    );
+
+    localStorage.setItem(
+      "admin_new_orders_count",
+      String(currentCount + 1)
+    );
+
+    // ✅ USER SUCCESS MESSAGE
+    localStorage.setItem(
+      "user_notification",
+      "✅ Payment successful! Your order has been placed."
+    );
+
+    // 🧹 CLEAR CART
+    localStorage.removeItem("cart");
+
+    // 🚀 REDIRECT
+    setTimeout(() => {
+      router.replace("/profile");
+    }, 100);
+  }
+
+  function handlePayNow() {
     if (!fullName || !phone || !address) {
       alert("Please fill all delivery details");
       return;
@@ -51,49 +102,13 @@ export default function CheckoutPage() {
       return;
     }
 
-    const newOrder = {
-      id: Date.now().toString(),
-      customerEmail: user.email,
-      customerName: fullName,
-      phone,
-      address,
-      items: cart,
-      total,
-      status: "Pending",
-      createdAt: new Date().toISOString(),
-    };
+    setProcessing(true);
 
-    const existingOrders = JSON.parse(
-      localStorage.getItem("orders_db") || "[]"
-    );
-
-    localStorage.setItem(
-      "orders_db",
-      JSON.stringify([newOrder, ...existingOrders])
-    );
-
-    // 🔔 ADMIN BADGE COUNTER (INCREMENT)
-    const currentCount = Number(
-      localStorage.getItem("admin_new_orders_count") || 0
-    );
-    localStorage.setItem(
-      "admin_new_orders_count",
-      String(currentCount + 1)
-    );
-
-    // ✅ USER SUCCESS MESSAGE
-    localStorage.setItem(
-      "user_notification",
-      "✅ Your order has been placed successfully!"
-    );
-
-    // 🧹 CLEAR CART
-    localStorage.removeItem("cart");
-
-    // ➡️ REDIRECT TO PROFILE
+    // ⏳ Simulate payment delay
     setTimeout(() => {
-      router.replace("/profile");
-    }, 50);
+      setProcessing(false);
+      mockPaymentSuccess();
+    }, 2000);
   }
 
   if (loading) {
@@ -146,10 +161,11 @@ export default function CheckoutPage() {
       </div>
 
       <button
-        onClick={handlePlaceOrder}
-        className="w-full bg-black text-white py-3 rounded"
+        onClick={handlePayNow}
+        disabled={processing}
+        className="w-full bg-black text-white py-3 rounded disabled:opacity-60"
       >
-        Place Order
+        {processing ? "Processing Payment..." : "Pay Now (Mock)"}
       </button>
     </div>
   );
