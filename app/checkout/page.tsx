@@ -20,6 +20,8 @@ export default function CheckoutPage() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [canRetry, setCanRetry] = useState(false);
 
   // 🔐 Require login
   useEffect(() => {
@@ -39,10 +41,10 @@ export default function CheckoutPage() {
     0
   );
 
-  function mockPaymentSuccess() {
+  // ✅ PAYMENT SUCCESS
+  function paymentSuccess() {
     if (!user) return;
 
-    // ✅ CREATE ORDER (PAID)
     const order = {
       id: Date.now().toString(),
       customerEmail: user.email,
@@ -57,38 +59,60 @@ export default function CheckoutPage() {
       createdAt: new Date().toISOString(),
     };
 
-    const existingOrders = JSON.parse(
+    const existing = JSON.parse(
       localStorage.getItem("orders_db") || "[]"
     );
 
     localStorage.setItem(
       "orders_db",
-      JSON.stringify([order, ...existingOrders])
+      JSON.stringify([order, ...existing])
     );
 
-    // 🔴 ADMIN BADGE COUNTER (CRITICAL FIX)
-    const currentCount = Number(
+    // 🔴 ADMIN BADGE COUNTER
+    const count = Number(
       localStorage.getItem("admin_new_orders_count") || 0
     );
 
     localStorage.setItem(
       "admin_new_orders_count",
-      String(currentCount + 1)
+      String(count + 1)
     );
 
-    // ✅ USER SUCCESS MESSAGE
+    // ✅ USER MESSAGE
     localStorage.setItem(
       "user_notification",
       "✅ Payment successful! Your order has been placed."
     );
 
-    // 🧹 CLEAR CART
     localStorage.removeItem("cart");
 
-    // 🚀 REDIRECT
     setTimeout(() => {
       router.replace("/profile");
     }, 100);
+  }
+
+  // ❌ PAYMENT FAILURE
+  function paymentFailure() {
+    setProcessing(false);
+    setError("❌ Payment failed. Please try again.");
+    setCanRetry(true);
+  }
+
+  function startPayment() {
+    setError(null);
+    setCanRetry(false);
+    setProcessing(true);
+
+    // 🎯 Simulated gateway result
+    setTimeout(() => {
+      const success = Math.random() > 0.2; // 80% success
+
+      if (success) {
+        paymentSuccess();
+      } else {
+        paymentFailure();
+      }
+    }, 2000);
   }
 
   function handlePayNow() {
@@ -102,13 +126,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    setProcessing(true);
-
-    // ⏳ Simulate payment delay
-    setTimeout(() => {
-      setProcessing(false);
-      mockPaymentSuccess();
-    }, 2000);
+    startPayment();
   }
 
   if (loading) {
@@ -118,6 +136,13 @@ export default function CheckoutPage() {
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-bold">Checkout</h1>
+
+      {/* ERROR MESSAGE */}
+      {error && (
+        <div className="bg-red-100 text-red-700 p-3 rounded">
+          {error}
+        </div>
+      )}
 
       {/* Order Summary */}
       <div className="border rounded p-4 space-y-2">
@@ -160,13 +185,25 @@ export default function CheckoutPage() {
         />
       </div>
 
-      <button
-        onClick={handlePayNow}
-        disabled={processing}
-        className="w-full bg-black text-white py-3 rounded disabled:opacity-60"
-      >
-        {processing ? "Processing Payment..." : "Pay Now (Mock)"}
-      </button>
+      {/* ACTION BUTTONS */}
+      {!canRetry && (
+        <button
+          onClick={handlePayNow}
+          disabled={processing}
+          className="w-full bg-black text-white py-3 rounded disabled:opacity-60"
+        >
+          {processing ? "Processing Payment..." : "Pay Now (Mock)"}
+        </button>
+      )}
+
+      {canRetry && (
+        <button
+          onClick={startPayment}
+          className="w-full bg-orange-600 text-white py-3 rounded"
+        >
+          🔁 Retry Payment
+        </button>
+      )}
     </div>
   );
 }

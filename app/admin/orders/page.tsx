@@ -1,27 +1,44 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 
 type Order = {
   id: string;
   customerName: string;
   total: number;
-  status: "Pending" | "Shipped" | "Delivered";
-  paymentStatus?: "Paid" | "Pending";
+  status: string;
+  paymentStatus?: string;
 };
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
 
   useEffect(() => {
-    // 🔕 CLEAR ADMIN BADGE WHEN VIEWING ORDERS
     localStorage.removeItem("admin_new_orders_count");
+    loadOrders();
+  }, []);
 
+  function loadOrders() {
     const stored = JSON.parse(localStorage.getItem("orders_db") || "[]");
     setOrders(stored);
-  }, []);
+  }
+
+  function refundOrder(id: string) {
+    const updated = orders.map(o =>
+      o.id === id
+        ? {
+            ...o,
+            status: "Refunded",
+            paymentStatus: "Refunded",
+          }
+        : o
+    );
+
+    localStorage.setItem("orders_db", JSON.stringify(updated));
+    loadOrders();
+    alert("Refund processed successfully");
+  }
 
   if (orders.length === 0) {
     return (
@@ -41,12 +58,12 @@ export default function AdminOrdersPage() {
           <table className="w-full border-collapse">
             <thead className="bg-gray-100">
               <tr>
-                <th className="text-left p-3">Order ID</th>
-                <th className="text-left p-3">Customer</th>
-                <th className="text-left p-3">Total</th>
-                <th className="text-left p-3">Payment</th>
-                <th className="text-left p-3">Status</th>
-                <th className="text-left p-3">Action</th>
+                <th className="p-3 text-left">Order ID</th>
+                <th className="p-3 text-left">Customer</th>
+                <th className="p-3 text-left">Total</th>
+                <th className="p-3 text-left">Payment</th>
+                <th className="p-3 text-left">Status</th>
+                <th className="p-3 text-left">Action</th>
               </tr>
             </thead>
 
@@ -56,29 +73,17 @@ export default function AdminOrdersPage() {
                   <td className="p-3">{order.id}</td>
                   <td className="p-3">{order.customerName}</td>
                   <td className="p-3">₦{order.total}</td>
-
-                  {/* 💳 PAYMENT STATUS */}
-                  <td className="p-3">
-                    {order.paymentStatus === "Paid" ? (
-                      <span className="text-green-600 font-semibold">
-                        Paid
-                      </span>
-                    ) : (
-                      <span className="text-yellow-600 font-semibold">
-                        Pending
-                      </span>
-                    )}
-                  </td>
-
+                  <td className="p-3">{order.paymentStatus}</td>
                   <td className="p-3">{order.status}</td>
-
                   <td className="p-3">
-                    <Link
-                      href={`/admin/orders/${order.id}`}
-                      className="text-blue-600 underline"
-                    >
-                      View
-                    </Link>
+                    {order.paymentStatus === "Paid" && (
+                      <button
+                        onClick={() => refundOrder(order.id)}
+                        className="text-red-600 underline"
+                      >
+                        Refund
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
