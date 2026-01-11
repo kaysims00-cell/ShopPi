@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
+import { isPiBrowser, piPayment } from "@/lib/pi";
 
 type CartItem = {
   id: string;
@@ -20,8 +21,7 @@ export default function CheckoutPage() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [canRetry, setCanRetry] = useState(false);
+  const [piAvailable, setPiAvailable] = useState(false);
 
   // 🔐 Require login
   useEffect(() => {
@@ -36,115 +36,152 @@ export default function CheckoutPage() {
     setCart(stored);
   }, []);
 
+  // 🟣 Detect Pi Browser
+  useEffect(() => {
+    setPiAvailable(isPiBrowser());
+  }, []);
+
   const total = cart.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
 
-  // ✅ PAYMENT SUCCESS
-  function paymentSuccess() {
-    if (!user) return;
+  /* ===============================
+     ✅ CENTRAL ORDER SAVE (SINGLE SOURCE)
+     =============================== */
+  function saveOrder(order: any) {
+    // 📦 SAVE ORDER
+    const existing = JSON.parse(localStorage.getItem("orders_db") || "[]");
+    localStorage.setItem("orders_db", JSON.stringify([order, ...existing]));
 
-    const order = {
-      id: Date.now().toString(),
-      customerEmail: user.email,
-      customerName: fullName,
-      phone,
-      address,
-      items: cart,
-      total,
-      status: "Pending",
-      paymentStatus: "Paid",
-      paymentRef: "MOCK-" + Math.random().toString(36).substring(2, 10),
-      createdAt: new Date().toISOString(),
-    };
-
-    const existing = JSON.parse(
-      localStorage.getItem("orders_db") || "[]"
-    );
-
-    localStorage.setItem(
-      "orders_db",
-      JSON.stringify([order, ...existing])
-    );
-
-    // 🔴 ADMIN BADGE COUNTER
+    // 🔴 ADMIN BADGE COUNT
     const count = Number(
       localStorage.getItem("admin_new_orders_count") || 0
     );
-
     localStorage.setItem(
       "admin_new_orders_count",
       String(count + 1)
     );
 
-    // ✅ USER MESSAGE
+    // 🔔 ADMIN REAL-TIME TOAST
+    localStorage.setItem(
+      "admin_toast_message",
+      "🛒 New order paid successfully"
+    );
+
+    // 🔔 BROADCAST EVENT (REAL-TIME)
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: "admin_toast_message",
+      })
+    );
+
+    // 👤 USER FEEDBACK
     localStorage.setItem(
       "user_notification",
       "✅ Payment successful! Your order has been placed."
     );
 
+    // 🧹 CLEAR CART
     localStorage.removeItem("cart");
 
-    setTimeout(() => {
-      router.replace("/profile");
-    }, 100);
+    // ➡️ REDIRECT
+    router.replace("/profile");
   }
 
-  // ❌ PAYMENT FAILURE
-  function paymentFailure() {
-    setProcessing(false);
-    setError("❌ Payment failed. Please try again.");
-    setCanRetry(true);
-  }
+  // 🌐 WEB MOCK PAYMENT
+  function handleWebPayment() {
+    if (!user) return;
 
-  function startPayment() {
-    setError(null);
-    setCanRetry(false);
+    if (!fullName || !phone || !address) {
+      alert("Please fill delivery details");
+      return;
+    }
+
     setProcessing(true);
 
-    // 🎯 Simulated gateway result
     setTimeout(() => {
-      const success = Math.random() > 0.2; // 80% success
+      const order = {
+        id: Date.now().toString(),
+        customerEmail: user.email,
+        customerName: fullName,
+        phone,
+        address,
+        items: cart,
+        total,
+        status: "Pending",
+        paymentStatus: "Paid",
+        paymentMethod: "web",
+        paymentRef: "WEB-" + Math.random().toString(36).slice(2, 10),
+        createdAt: new Date().toISOString(),
+      };
 
-      if (success) {
-        paymentSuccess();
-      } else {
-        paymentFailure();
-      }
-    }, 2000);
+      saveOrder(order);
+      setProcessing(false);
+    }, 1200);
   }
 
-  function handlePayNow() {
+  // 🟣 PI PAYMENT (SERVER VERIFIED)
+  async function handlePiPayment() {
+    if (!user) return;
+
     if (!fullName || !phone || !address) {
-      alert("Please fill all delivery details");
+      alert("Please fill delivery details");
       return;
     }
 
-    if (cart.length === 0) {
-      alert("Your cart is empty");
-      return;
+    try {
+      setProcessing(true);
+
+      const payment = await piPayment({
+        amount: total,
+        memo: "Order payment",
+        metadata: { email: user.email },
+      });
+
+      const verify = await fetch("/api/pi/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentId: payment.identifier,
+        }),
+      });
+
+      const result = await verify.json();
+
+      if (!verify.ok || !result.success) {
+        throw new Error("Verification failed");
+      }
+
+      const order = {
+        id: Date.now().toString(),
+        customerEmail: user.email,
+        customerName: fullName,
+        phone,
+        address,
+        items: cart,
+        total,
+        status: "Pending",
+        paymentStatus: "Paid",
+        paymentMethod: "pi",
+        paymentRef: payment.identifier,
+        createdAt: new Date().toISOString(),
+      };
+
+      saveOrder(order);
+    } catch (err) {
+      alert("Pi payment failed or cancelled");
+      setProcessing(false);
     }
-
-    startPayment();
   }
 
-  if (loading) {
-    return <div className="p-6">Loading...</div>;
-  }
+  if (loading) return <div className="p-6">Loading...</div>;
 
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-bold">Checkout</h1>
 
-      {/* ERROR MESSAGE */}
-      {error && (
-        <div className="bg-red-100 text-red-700 p-3 rounded">
-          {error}
-        </div>
-      )}
-
-      {/* Order Summary */}
+      {/* ORDER SUMMARY */}
       <div className="border rounded p-4 space-y-2">
         <h2 className="font-semibold">Order Summary</h2>
 
@@ -161,7 +198,7 @@ export default function CheckoutPage() {
         <p className="font-bold">Total: ₦{total}</p>
       </div>
 
-      {/* Delivery Form */}
+      {/* DELIVERY */}
       <div className="space-y-3">
         <input
           className="w-full border p-2 rounded"
@@ -169,41 +206,40 @@ export default function CheckoutPage() {
           value={fullName}
           onChange={e => setFullName(e.target.value)}
         />
-
         <input
           className="w-full border p-2 rounded"
-          placeholder="Phone Number"
+          placeholder="Phone"
           value={phone}
           onChange={e => setPhone(e.target.value)}
         />
-
         <textarea
           className="w-full border p-2 rounded"
-          placeholder="Delivery Address"
+          placeholder="Address"
           value={address}
           onChange={e => setAddress(e.target.value)}
         />
       </div>
 
-      {/* ACTION BUTTONS */}
-      {!canRetry && (
-        <button
-          onClick={handlePayNow}
-          disabled={processing}
-          className="w-full bg-black text-white py-3 rounded disabled:opacity-60"
-        >
-          {processing ? "Processing Payment..." : "Pay Now (Mock)"}
-        </button>
-      )}
+      {/* PAY BUTTONS */}
+      <div className="space-y-3">
+        {piAvailable && (
+          <button
+            onClick={handlePiPayment}
+            disabled={processing}
+            className="w-full bg-purple-700 text-white py-3 rounded"
+          >
+            Pay with Pi
+          </button>
+        )}
 
-      {canRetry && (
         <button
-          onClick={startPayment}
-          className="w-full bg-orange-600 text-white py-3 rounded"
+          onClick={handleWebPayment}
+          disabled={processing}
+          className="w-full bg-black text-white py-3 rounded"
         >
-          🔁 Retry Payment
+          Pay with Web (Mock)
         </button>
-      )}
+      </div>
     </div>
   );
 }

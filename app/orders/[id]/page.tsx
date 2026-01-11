@@ -21,8 +21,9 @@ type Order = {
   items: OrderItem[];
   total: number;
   status: "Pending" | "Shipped" | "Delivered" | "Cancelled" | "Refunded";
-  paymentStatus?: "Paid" | "Pending" | "Refunded";
+  paymentStatus?: "Paid" | "Pending" | "Refunded" | "Failed";
   paymentRef?: string;
+  paymentMethod?: "pi" | "web";
   createdAt: string;
 };
 
@@ -30,7 +31,6 @@ export default function OrderDetailsPage() {
   const { id } = useParams();
   const router = useRouter();
   const { user, loading } = useAuth();
-
   const [order, setOrder] = useState<Order | null>(null);
 
   useEffect(() => {
@@ -74,15 +74,19 @@ export default function OrderDetailsPage() {
     router.replace("/orders");
   }
 
-  if (!order) {
-    return <div className="p-6">Loading order...</div>;
+  function retryPiPayment() {
+    alert(
+      "Retry Pi Payment:\n\nYou will be redirected to checkout to complete payment."
+    );
+    router.push("/checkout");
   }
+
+  if (!order) return <div className="p-6">Loading order...</div>;
 
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-bold">Order Receipt</h1>
 
-      {/* STATUS TIMELINE */}
       <StatusTimeline status={order.status} />
 
       {/* ORDER INFO */}
@@ -91,17 +95,52 @@ export default function OrderDetailsPage() {
           <p><strong>Order ID:</strong> {order.id}</p>
           <p><strong>Date:</strong> {new Date(order.createdAt).toLocaleString()}</p>
           <p><strong>Status:</strong> {order.status}</p>
+
           <p>
-            <strong>Payment:</strong>{" "}
+            <strong>Payment Status:</strong>{" "}
             {order.paymentStatus || "Pending"}
           </p>
+
+          {order.paymentMethod && (
+            <p>
+              <strong>Payment Method:</strong>{" "}
+              {order.paymentMethod === "pi" ? "Pi Network" : "Web"}
+            </p>
+          )}
+
           {order.paymentRef && (
             <p><strong>Payment Ref:</strong> {order.paymentRef}</p>
           )}
+
+          {/* 🟣 PI RECEIPT */}
+          {order.paymentMethod === "pi" && order.paymentStatus === "Paid" && (
+            <div className="mt-3 p-3 rounded bg-purple-50 border border-purple-200 text-sm">
+              <p className="font-semibold text-purple-700">
+                🟣 Pi Network Payment Confirmed
+              </p>
+              <p>This order was successfully paid using Pi Network.</p>
+            </div>
+          )}
+
+          {/* 🔁 RETRY FAILED PI */}
+          {order.paymentMethod === "pi" &&
+            order.paymentStatus === "Failed" && (
+              <div className="mt-3 p-3 rounded bg-red-50 border border-red-200 text-sm">
+                <p className="font-semibold text-red-600">
+                  Pi Payment Failed
+                </p>
+                <button
+                  onClick={retryPiPayment}
+                  className="mt-2 bg-purple-700 text-white px-4 py-2 rounded"
+                >
+                  Retry Pi Payment
+                </button>
+              </div>
+            )}
         </CardContent>
       </Card>
 
-      {/* DELIVERY INFO */}
+      {/* DELIVERY */}
       <Card>
         <CardContent className="p-4 space-y-1">
           <h2 className="font-semibold">Delivery Details</h2>
@@ -133,12 +172,13 @@ export default function OrderDetailsPage() {
 
       {/* ACTIONS */}
       <div className="flex gap-4">
-        <button
-          onClick={() => window.print()}
-          className="bg-black text-white px-4 py-2 rounded"
+        {/* ✅ SERVER PDF DOWNLOAD */}
+        <a
+          href={`/api/invoice/${order.id}`}
+          className="bg-black text-white px-4 py-2 rounded inline-block"
         >
-          Print Invoice
-        </button>
+          Download PDF Invoice
+        </a>
 
         {order.status === "Pending" && (
           <button
@@ -153,7 +193,7 @@ export default function OrderDetailsPage() {
   );
 }
 
-/* 🔵 STATUS TIMELINE */
+/* STATUS TIMELINE */
 function StatusTimeline({ status }: { status: Order["status"] }) {
   const steps: Order["status"][] = [
     "Pending",

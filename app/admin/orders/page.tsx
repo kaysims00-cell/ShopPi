@@ -14,13 +14,26 @@ type Order = {
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
 
+  // 🔁 CLEAR BADGE + LOAD ORDERS
   useEffect(() => {
-    localStorage.removeItem("admin_new_orders_count");
+    // ✅ RESET BADGE COUNT PROPERLY
+    localStorage.setItem("admin_new_orders_count", "0");
+
+    // 🔔 FORCE STORAGE EVENT (IMPORTANT)
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: "admin_new_orders_count",
+        newValue: "0",
+      })
+    );
+
     loadOrders();
   }, []);
 
   function loadOrders() {
-    const stored = JSON.parse(localStorage.getItem("orders_db") || "[]");
+    const stored = JSON.parse(
+      localStorage.getItem("orders_db") || "[]"
+    );
     setOrders(stored);
   }
 
@@ -36,6 +49,14 @@ export default function AdminOrdersPage() {
     );
 
     localStorage.setItem("orders_db", JSON.stringify(updated));
+
+    // 🔔 Notify dashboard
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: "orders_db",
+      })
+    );
+
     loadOrders();
     alert("Refund processed successfully");
   }
