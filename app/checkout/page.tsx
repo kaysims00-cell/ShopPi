@@ -47,14 +47,13 @@ export default function CheckoutPage() {
   );
 
   /* ===============================
-     ✅ CENTRAL ORDER SAVE (SINGLE SOURCE)
+     ✅ CENTRAL ORDER SAVE
      =============================== */
   function saveOrder(order: any) {
-    // 📦 SAVE ORDER
     const existing = JSON.parse(localStorage.getItem("orders_db") || "[]");
     localStorage.setItem("orders_db", JSON.stringify([order, ...existing]));
 
-    // 🔴 ADMIN BADGE COUNT
+    // 🔴 ADMIN BADGE
     const count = Number(
       localStorage.getItem("admin_new_orders_count") || 0
     );
@@ -63,13 +62,13 @@ export default function CheckoutPage() {
       String(count + 1)
     );
 
-    // 🔔 ADMIN REAL-TIME TOAST
+    // 🔔 ADMIN TOAST
     localStorage.setItem(
       "admin_toast_message",
       "🛒 New order paid successfully"
     );
 
-    // 🔔 BROADCAST EVENT (REAL-TIME)
+    // 🔔 REAL-TIME EVENT
     window.dispatchEvent(
       new StorageEvent("storage", {
         key: "admin_toast_message",
@@ -85,7 +84,6 @@ export default function CheckoutPage() {
     // 🧹 CLEAR CART
     localStorage.removeItem("cart");
 
-    // ➡️ REDIRECT
     router.replace("/profile");
   }
 
@@ -101,8 +99,10 @@ export default function CheckoutPage() {
     setProcessing(true);
 
     setTimeout(() => {
+      const orderId = Date.now().toString();
+
       const order = {
-        id: Date.now().toString(),
+        id: orderId,
         customerEmail: user.email,
         customerName: fullName,
         phone,
@@ -121,7 +121,7 @@ export default function CheckoutPage() {
     }, 1200);
   }
 
-  // 🟣 PI PAYMENT (SERVER VERIFIED)
+  // 🟣 PI PAYMENT (SERVER VERIFIED + WEBHOOK READY)
   async function handlePiPayment() {
     if (!user) return;
 
@@ -133,12 +133,20 @@ export default function CheckoutPage() {
     try {
       setProcessing(true);
 
+      // ✅ CREATE ORDER ID ONCE
+      const orderId = Date.now().toString();
+
+      // 1️⃣ PI PAYMENT
       const payment = await piPayment({
         amount: total,
         memo: "Order payment",
-        metadata: { email: user.email },
+        metadata: {
+          email: user.email,
+          orderId, // 🔑 USED BY WEBHOOK
+        },
       });
 
+      // 2️⃣ SERVER VERIFY
       const verify = await fetch("/api/pi/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -153,8 +161,9 @@ export default function CheckoutPage() {
         throw new Error("Verification failed");
       }
 
+      // 3️⃣ SAVE ORDER (ID MATCHES METADATA)
       const order = {
-        id: Date.now().toString(),
+        id: orderId,
         customerEmail: user.email,
         customerName: fullName,
         phone,
