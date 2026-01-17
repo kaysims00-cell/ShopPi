@@ -257,7 +257,10 @@ function AddToCartButton({ product }: { product: typeof products[0] }) {
       className="mt-2 w-full"
       onClick={(e) => {
         e.preventDefault() // Prevent navigating due to parent Link
-        addToCart(product)
+        addToCart({
+          ...product,
+          id: product.id.toString(),
+        })
       }}
     >
       Add to Cart

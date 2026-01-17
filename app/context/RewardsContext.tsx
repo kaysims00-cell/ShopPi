@@ -14,6 +14,7 @@ type RewardsContextType = {
   streak: number;
   history: RewardEntry[];
   addPoints: (amount: number, reason?: string) => void;
+  redeemPoints: (amount: number, reason?: string) => void;
   clearRewards: () => void;
 };
 
@@ -38,10 +39,9 @@ export function RewardsProvider({ children }: { children: ReactNode }) {
     if (savedStreak) setStreak(parseInt(savedStreak));
     if (savedLevel) setLevel(savedLevel);
 
-    // Streak: check daily login
     const today = new Date().toDateString();
+
     if (lastActive !== today) {
-      // new day → increase streak
       setStreak((prev) => prev + 1);
       localStorage.setItem("rewardStreak", (streak + 1).toString());
     }
@@ -49,7 +49,7 @@ export function RewardsProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("lastActiveDate", today);
   }, []);
 
-  // Auto save to localStorage
+  // Auto save
   useEffect(() => {
     localStorage.setItem("rewardPoints", points.toString());
     localStorage.setItem("rewardHistory", JSON.stringify(history));
@@ -57,7 +57,7 @@ export function RewardsProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("rewardLevel", level);
   }, [points, history, streak, level]);
 
-  // Determine Level based on points
+  // Level logic
   useEffect(() => {
     if (points >= 5000) setLevel("Diamond");
     else if (points >= 2500) setLevel("Platinum");
@@ -77,6 +77,21 @@ export function RewardsProvider({ children }: { children: ReactNode }) {
     setHistory((prev) => [entry, ...prev]);
   };
 
+  const redeemPoints = (amount: number, reason: string = "Points Redeemed") => {
+    setPoints((prev) => {
+      if (prev < amount) return prev;
+      return prev - amount;
+    });
+
+    const entry: RewardEntry = {
+      points: -amount,
+      reason,
+      date: new Date().toISOString(),
+    };
+
+    setHistory((prev) => [entry, ...prev]);
+  };
+
   const clearRewards = () => {
     setPoints(0);
     setHistory([]);
@@ -90,7 +105,17 @@ export function RewardsProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <RewardsContext.Provider value={{ points, level, streak, history, addPoints, clearRewards }}>
+    <RewardsContext.Provider
+      value={{
+        points,
+        level,
+        streak,
+        history,
+        addPoints,
+        redeemPoints,
+        clearRewards,
+      }}
+    >
       {children}
     </RewardsContext.Provider>
   );

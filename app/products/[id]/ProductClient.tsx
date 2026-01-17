@@ -28,11 +28,10 @@ export default function ProductClient({ product }: { product: Product }) {
   const handleAddToCart = () => {
     if (product.stock === 0) return;
     addToCart({
-      id: product.id,
-      name: product.name,
+      id: product.id.toString(),
+      name: product.name || "",
       price: product.price || 0,
       image: product.image,
-      quantity: 1,
     });
   };
 

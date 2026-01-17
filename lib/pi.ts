@@ -1,29 +1,32 @@
 // lib/pi.ts
-declare global {
-  interface Window {
-    Pi?: any;
-  }
-}
 
 export function isPiBrowser(): boolean {
   if (typeof window === "undefined") return false;
-  return typeof window.Pi !== "undefined";
+  return typeof (window as any).Pi !== "undefined";
 }
+
+type PiPaymentParams = {
+  amount: number;
+  memo: string;
+  metadata: any;
+};
 
 export async function piPayment({
   amount,
   memo,
   metadata,
-}: {
-  amount: number;
-  memo: string;
-  metadata: any;
-}) {
-  if (!window.Pi) {
+}: PiPaymentParams) {
+  if (typeof window === "undefined") {
+    throw new Error("Not running in browser");
+  }
+
+  const Pi = (window as any).Pi;
+
+  if (!Pi) {
     throw new Error("Pi SDK not available");
   }
 
-  const payment = await window.Pi.createPayment({
+  const payment = await Pi.createPayment({
     amount,
     memo,
     metadata,
