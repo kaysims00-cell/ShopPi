@@ -34,7 +34,6 @@ export default function ProductClient({ product }: { product: Product }) {
       id: product.id.toString(),
       name: product.name,
       price: product.price ?? 0,
-      image: product.image,
       quantity: 1, // ✅ REQUIRED
     });
   };
