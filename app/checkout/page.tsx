@@ -1,17 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { CartItem } from "@/types/cart";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import { isPiBrowser, piPayment } from "@/lib/pi";
-
-type CartItem = {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  image?: string
-};
 
 export default function CheckoutPage() {
   const router = useRouter();

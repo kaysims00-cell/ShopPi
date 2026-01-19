@@ -1,14 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-
-export type CartItem = {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  image?: string
-};
+import type { CartItem } from "@/types/cart";
 
 type CartContextType = {
   cart: CartItem[];
@@ -51,6 +44,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateQuantity = (id: string, qty: number) => {
+    if (qty < 1) return;
     setCart(prev =>
       prev.map(item =>
         item.id === id ? { ...item, quantity: qty } : item

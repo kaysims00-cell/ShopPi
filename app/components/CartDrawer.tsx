@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useCart, CartItem } from "@/app/context/CartContext";
+import { useCart } from "@/app/context/CartContext";
+import type { CartItem } from "@/types/cart";
 import { useRewards } from "@/app/context/RewardsContext";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
