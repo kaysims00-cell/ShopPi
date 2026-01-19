@@ -57,8 +57,10 @@ export default function CartDrawer({
 
   return (
     <>
+      {/* Trigger */}
       <div onClick={() => setOpen(true)}>{children}</div>
 
+      {/* Overlay */}
       {open && (
         <div
           className="fixed inset-0 bg-black/40 z-50"
@@ -66,12 +68,14 @@ export default function CartDrawer({
         />
       )}
 
+      {/* Drawer */}
       <div
         ref={drawerRef}
         className={`fixed top-0 right-0 z-[60] h-full w-96 bg-card shadow-xl p-5 transition-transform duration-300 ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
+        {/* Header */}
         <div className="flex justify-between items-center mb-5">
           <h2 className="text-xl font-bold">Your Cart</h2>
           <Button variant="ghost" onClick={() => setOpen(false)}>
@@ -79,6 +83,7 @@ export default function CartDrawer({
           </Button>
         </div>
 
+        {/* Success State */}
         {checkoutSuccess && (
           <div className="flex flex-col items-center text-center py-10">
             <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
@@ -89,6 +94,7 @@ export default function CartDrawer({
           </div>
         )}
 
+        {/* Cart Items */}
         {!checkoutSuccess && (
           <>
             {cart.length === 0 ? (
@@ -100,13 +106,10 @@ export default function CartDrawer({
                     key={item.id}
                     className="flex gap-3 items-center border-b pb-3"
                   >
-                    {item.image && (
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-16 h-16 object-cover rounded"
-                      />
-                    )}
+                    {/* Image placeholder (no item.image usage) */}
+                    <div className="w-16 h-16 bg-muted rounded flex items-center justify-center text-xs text-muted-foreground">
+                      Item
+                    </div>
 
                     <div className="flex-1">
                       <p className="font-semibold">{item.name}</p>
@@ -123,9 +126,11 @@ export default function CartDrawer({
                         >
                           -
                         </Button>
+
                         <span className="px-3 font-semibold">
                           {item.quantity}
                         </span>
+
                         <Button
                           size="sm"
                           onClick={() =>
@@ -134,6 +139,7 @@ export default function CartDrawer({
                         >
                           +
                         </Button>
+
                         <Button
                           size="sm"
                           variant="destructive"
@@ -148,6 +154,7 @@ export default function CartDrawer({
               </div>
             )}
 
+            {/* Footer */}
             {cart.length > 0 && (
               <div className="border-t pt-4 mt-4">
                 <p className="font-semibold text-lg">
