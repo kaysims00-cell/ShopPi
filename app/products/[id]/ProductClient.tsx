@@ -22,16 +22,20 @@ export default function ProductClient({ product }: { product: Product }) {
   const router = useRouter();
   const { addToCart, cart } = useCart();
 
-  const existingItem = cart.find((item) => item.id === product.id);
+  const existingItem = cart.find(
+    item => item.id === product.id.toString()
+  );
   const quantityInCart = existingItem ? existingItem.quantity : 0;
 
   const handleAddToCart = () => {
     if (product.stock === 0) return;
+
     addToCart({
       id: product.id.toString(),
-      name: product.name || "",
-      price: product.price || 0,
+      name: product.name,
+      price: product.price ?? 0,
       image: product.image,
+      quantity: 1, // ✅ REQUIRED
     });
   };
 
@@ -65,17 +69,23 @@ export default function ProductClient({ product }: { product: Product }) {
 
         <div className="flex flex-col gap-4">
           {product.category && (
-            <p className="text-sm text-muted-foreground">{product.category}</p>
+            <p className="text-sm text-muted-foreground">
+              {product.category}
+            </p>
           )}
+
           <h2 className="text-2xl font-bold">{product.name}</h2>
+
           {product.description && (
             <p className="text-base text-muted-foreground">
               {product.description}
             </p>
           )}
+
           {typeof product.price !== "undefined" && (
             <p className="text-xl font-semibold">₦{product.price}</p>
           )}
+
           <p className="text-sm text-muted-foreground">
             {typeof product.stock !== "undefined"
               ? product.stock > 0
@@ -97,10 +107,10 @@ export default function ProductClient({ product }: { product: Product }) {
       </div>
 
       {/* ⭐ Product Reviews */}
-<div className="px-4 mt-12 border-t pt-8">
-  <ProductReviews productId={String(product.id)} />
-</div>
-<ProductReviews productId={String(product.id)} />
+      <div className="px-4 mt-12 border-t pt-8">
+        <ProductReviews productId={String(product.id)} />
+      </div>
+
       {/* Related Products */}
       <div className="px-4 mt-12">
         <h3 className="text-lg font-semibold mb-4">Related Products</h3>
