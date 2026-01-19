@@ -1,83 +1,80 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useCart } from "@/app/context/CartContext";
+import { useAuth } from "@/app/context/AuthContext";
 
 export default function CartPage() {
-  const { cart, removeFromCart, updateQuantity } = useCart();
+  const { cart, clearCart } = useCart();
+  const { user } = useAuth();
 
-  // 🔁 FORCE RE-RENDER ON PAGE LOAD (NO REFRESH)
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    setTick(t => t + 1);
-  }, []);
+  const [loading, setLoading] = useState(false);
 
   const total = cart.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
 
-  if (cart.length === 0) {
-    return (
-      <div className="p-6 text-center">
-        <h1 className="text-2xl font-bold mb-2">Your Cart</h1>
-        <p className="mb-4">Your cart is empty.</p>
-        <Link href="/products" className="text-blue-600 underline">
-          Continue Shopping
-        </Link>
-      </div>
-    );
-  }
+  // -------------------------------
+  // SAVE ORDER TO LOCAL STORAGE
+  // -------------------------------
+  const saveOrder = () => {
+    const orders = JSON.parse(localStorage.getItem("orders_db") || "[]");
+
+    const newOrder = {
+      id: Date.now().toString(),
+      userId: user?.id || "guest",
+      items: cart,
+      total,
+      status: "Pending",
+      createdAt: new Date().toISOString(),
+    };
+
+    orders.push(newOrder);
+    localStorage.setItem("orders_db", JSON.stringify(orders));
+  };
+
+  // -------------------------------
+  // NORMAL CHECKOUT (no Pi for now)
+  // -------------------------------
+  const handleCheckout = () => {
+    if (cart.length === 0) {
+      alert("Your cart is empty.");
+      return;
+    }
+
+    saveOrder();
+    clearCart();
+    alert("Order placed successfully! 🎉");
+  };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold">Your Cart</h1>
+    <div className="p-6">
+      <h1 className="text-xl font-bold mb-4">Your Cart</h1>
 
-      {cart.map(item => (
-        <div
-          key={item.id}
-          className="flex justify-between items-center border p-4 rounded"
-        >
-          <div>
-            <p className="font-semibold">{item.name}</p>
-            <p className="text-sm text-gray-600">₦{item.price}</p>
-          </div>
+      {cart.length === 0 ? (
+        <p>Your cart is empty</p>
+      ) : (
+        <>
+          {cart.map((item) => (
+            <div key={item.id} className="border p-3 mb-2 rounded">
+              <p>
+                {item.name} — {item.quantity} × ₦{item.price}
+              </p>
+            </div>
+          ))}
 
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min={1}
-              value={item.quantity}
-              onChange={e =>
-                updateQuantity(item.id, Number(e.target.value))
-              }
-              className="w-16 border p-1 rounded"
-            />
+          <h2 className="mt-4 text-lg font-bold">Total: ₦{total}</h2>
 
-            <button
-              onClick={() => removeFromCart(item.id)}
-              className="text-red-600 text-sm"
-            >
-              Remove
-            </button>
-          </div>
-        </div>
-      ))}
-
-      <div className="flex justify-between font-bold text-lg">
-        <span>Total</span>
-        <span>₦{total}</span>
-      </div>
-
-      <div className="flex justify-end">
-        <Link
-          href="/checkout"
-          className="bg-black text-white px-6 py-2 rounded"
-        >
-          Proceed to Checkout
-        </Link>
-      </div>
+          <button
+            onClick={handleCheckout}
+            disabled={loading}
+            className="mt-4 px-4 py-2 bg-green-600 text-white rounded"
+          >
+            Place Order
+          </button>
+        </>
+      )}
     </div>
   );
 }
