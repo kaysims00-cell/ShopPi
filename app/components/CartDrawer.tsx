@@ -36,24 +36,67 @@ export default function CartDrawer({
     }
   };
 
-  const handleCheckout = () => {
-    if (cart.length === 0) return;
+  const handleCheckout = async () => {
+  if (cart.length === 0) return;
 
-    const totalPoints = cart.reduce(
-      (sum, item) => sum + item.quantity * 5,
-      0
+  if (typeof window === "undefined" || !(window as any).Pi) {
+    alert("Please open this app in Pi Browser");
+    return;
+  }
+
+  const Pi = (window as any).Pi;
+
+  const totalAmount = cart.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+
+  try {
+    await Pi.createPayment(
+      {
+        amount: totalAmount,
+        memo: "ShopPi Order Payment",
+        metadata: {
+          items: cart.map(item => ({
+            id: item.id,
+            name: item.name,
+            quantity: item.quantity,
+          })),
+        },
+      },
+      {
+        onReadyForServerApproval(paymentId: string) {
+          // For Checklist 10, we can auto-approve
+          console.log("Payment ready:", paymentId);
+        },
+
+        onReadyForServerCompletion(paymentId: string, txid: string) {
+          console.log("Payment completed:", paymentId, txid);
+
+          clearCart();
+          setCheckoutSuccess(true);
+
+          setTimeout(() => {
+            setCheckoutSuccess(false);
+            setOpen(false);
+          }, 2500);
+        },
+
+        onCancel(paymentId: string) {
+          console.log("Payment cancelled:", paymentId);
+        },
+
+        onError(error: any) {
+          console.error("Payment error:", error);
+          alert("Payment failed. Please try again.");
+        },
+      }
     );
-
-    addPoints(totalPoints);
-    clearCart();
-
-    setCheckoutSuccess(true);
-
-    setTimeout(() => {
-      setCheckoutSuccess(false);
-      setOpen(false);
-    }, 2500);
-  };
+  } catch (err) {
+    console.error(err);
+    alert("Unable to start Pi payment.");
+  }
+};
 
   return (
     <>
