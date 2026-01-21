@@ -4,16 +4,13 @@ import {
   ShoppingBag,
   Search,
   Menu,
-  Home,
-  User,
-  Grid3x3,
-  Plus,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { CartProvider, useCart } from "./context/CartContext"
+import CartDrawer from "@/app/components/CartDrawer"
 
 const categories = [
   { name: "Electronics", icon: "📱" },
@@ -92,7 +89,8 @@ function PageContent() {
 
           <h1 className="text-xl font-bold">ShopPi</h1>
 
-          <Link href="/cart">
+          {/* ✅ CART DRAWER TRIGGER */}
+          <CartDrawer>
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingBag className="h-6 w-6" />
               {cart.length > 0 && (
@@ -101,9 +99,10 @@ function PageContent() {
                 </Badge>
               )}
             </Button>
-          </Link>
+          </CartDrawer>
         </div>
 
+        {/* Search */}
         <div className="px-4 pb-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
@@ -154,7 +153,7 @@ function PageContent() {
   )
 }
 
-/* ✅ FIXED ADD TO CART BUTTON */
+/* ✅ ADD TO CART */
 function AddToCartButton({ product }: { product: Product }) {
   const { addToCart } = useCart()
 
