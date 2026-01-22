@@ -30,7 +30,7 @@ export default function Header() {
         </div>
 
         {/* 🛒 Cart Drawer */}
-        <CartDrawer>
+        <CartDrawer onCheckout={() => {}}>
           <div className="relative cursor-pointer">
             <ShoppingCart className="h-5 w-5" />
             {totalItems > 0 && (
