@@ -9,8 +9,10 @@ import { CheckCircle } from "lucide-react";
 
 export default function CartDrawer({
   children,
+  onCheckout,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
+  onCheckout: () => void
 }) {
   const { cart, removeFromCart, updateQuantity, clearCart } = useCart();
   const { addPoints } = useRewards();
@@ -208,7 +210,7 @@ export default function CartDrawer({
                   )}
                 </p>
 
-                <Button className="w-full mt-4" onClick={handleCheckout}>
+                <Button className="w-full mt-4" onClick={onCheckout}>
                   Checkout & Earn Rewards
                 </Button>
               </div>

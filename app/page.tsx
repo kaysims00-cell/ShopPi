@@ -11,6 +11,45 @@ import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { CartProvider, useCart } from "./context/CartContext"
 import CartDrawer from "@/app/components/CartDrawer"
+import { useEffect } from "react"
+
+/* ============================
+   PI PAYMENT FUNCTION
+============================ */
+function checkoutWithPi(amount: number) {
+  if (typeof window === "undefined") return
+
+  // @ts-ignore
+  if (!window.Pi) {
+    alert("Please open this app in Pi Browser")
+    return
+  }
+
+  // @ts-ignore
+  window.Pi.createPayment(
+    {
+      amount,
+      memo: "ShopPi Test Purchase",
+      metadata: { app: "ShopPi" },
+    },
+    {
+      onReadyForServerApproval(paymentId: string) {
+        console.log("Ready for approval", paymentId)
+      },
+      onReadyForServerCompletion(paymentId: string, txid: string) {
+        console.log("Payment completed", paymentId, txid)
+        alert("Payment successful 🎉")
+      },
+      onCancel(paymentId: string) {
+        alert("Payment cancelled")
+      },
+      onError(error: any) {
+        console.error(error)
+        alert("Payment failed")
+      },
+    }
+  )
+}
 
 const categories = [
   { name: "Electronics", icon: "📱" },
@@ -76,7 +115,7 @@ export default function HomePage() {
 }
 
 function PageContent() {
-  const { cart } = useCart()
+  const { cart, clearCart } = useCart()
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -89,8 +128,14 @@ function PageContent() {
 
           <h1 className="text-xl font-bold">ShopPi</h1>
 
-          {/* ✅ CART DRAWER TRIGGER */}
-          <CartDrawer>
+          {/* ✅ CART DRAWER */}
+          <CartDrawer
+            onCheckout={() => {
+              if (cart.length === 0) return
+              checkoutWithPi(cart.length) // 1 Pi per item (Testnet)
+              clearCart()
+            }}
+          >
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingBag className="h-6 w-6" />
               {cart.length > 0 && (
