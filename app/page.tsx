@@ -18,40 +18,47 @@ import CartDrawer from "@/app/components/CartDrawer"
 async function checkoutWithPi(amount: number) {
   if (typeof window === "undefined") return
 
-  // wait briefly for Pi Browser injection
-  await new Promise((r) => setTimeout(r, 500))
-
-  // @ts-ignore
-  const Pi = window.Pi
-
+  const Pi = (window as any).Pi
   if (!Pi) {
-    alert("Pi Browser not detected yet. Please retry.")
+    alert("Pi Browser not detected")
     return
   }
 
-  (Pi as any).createPayment(
-    {
-      amount,
-      memo: "ShopPi Test Purchase",
-      metadata: { app: "ShopPi", checklist: 10 },
-    },
-    {
-      onReadyForServerApproval(paymentId: string) {
-        console.log("Ready for approval:", paymentId)
+  try {
+    // ✅ Correct init (TypeScript-safe)
+    await Pi.init({ version: "2.0" })
+
+    // ✅ Cast once to bypass outdated typings
+    ;(Pi as any).createPayment(
+      {
+        amount,
+        memo: "ShopPi Checklist 10 Test",
+        metadata: {
+          app: "ShopPi",
+          checklist: 10,
+        },
       },
-      onReadyForServerCompletion(paymentId: string, txid: string) {
-        console.log("Payment completed:", paymentId, txid)
-        alert("Payment successful 🎉")
-      },
-      onCancel(paymentId: string) {
-        alert("Payment cancelled")
-      },
-      onError(error: any) {
-        console.error(error)
-        alert("Payment failed")
-      },
-    }
-  )
+      {
+        onReadyForServerApproval(paymentId: string) {
+          console.log("Ready for approval:", paymentId)
+        },
+        onReadyForServerCompletion(paymentId: string, txid: string) {
+          console.log("Payment completed:", paymentId, txid)
+          alert("Payment successful 🎉")
+        },
+        onCancel(paymentId: string) {
+          alert("Payment cancelled")
+        },
+        onError(error: any) {
+          console.error(error)
+          alert("Payment failed")
+        },
+      }
+    )
+  } catch (err) {
+    console.error("Pi SDK error", err)
+    alert("Pi SDK not ready. Try again.")
+  }
 }
 
 const categories = [
